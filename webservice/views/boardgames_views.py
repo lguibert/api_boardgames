@@ -1,3 +1,5 @@
+# coding: utf8
+
 from tools_views import *
 import json
 from webservice.models import Boardgames
@@ -26,8 +28,7 @@ def addGame(request):
                 game.price = newgame['price']
 
             if 'image_url' in newgame:
-                image_content = urllib2.urlopen(newgame['image_url']).read()
-                game.image = "data:image/jpeg;base64," + base64.b64encode(image_content)
+                game.image = create_base64_from_url(newgame['image_url'])
 
             if 'image' in newgame:
                 game.image = newgame['image']
@@ -37,3 +38,26 @@ def addGame(request):
             return send_response(True)
         except:
             return send_response("Erreur lors de la sauvegarde.", 500)
+
+
+def create_base64_from_url(url):
+    image_content = urllib2.urlopen(url).read()
+    return "data:image/jpeg;base64," + base64.b64encode(image_content)
+
+
+@csrf_exempt
+def updateGame(request):
+    if request.method == "POST":
+        try:
+            updatedgame = json.loads(request.body)
+
+            if 'image_url' in updatedgame:
+                updatedgame['image'] = create_base64_from_url(updatedgame['image_url'])
+                del updatedgame['image_url']
+
+            Boardgames.objects.filter(id=updatedgame['id']).update(**updatedgame)
+
+            return send_response(True)
+
+        except:
+            return send_response("Erreur lors de la mise à jour.", 500)
